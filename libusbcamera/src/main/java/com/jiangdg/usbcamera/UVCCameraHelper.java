@@ -32,9 +32,10 @@ public class UVCCameraHelper {
     private static final String TAG = "UVCCameraHelper";
     private int previewWidth = 640;
     private int previewHeight = 480;
-    // 高分辨率YUV格式帧率较低
     public static final int FRAME_FORMAT_YUYV = UVCCamera.FRAME_FORMAT_YUYV;
-    // 默认使用MJPEG
+    // Default using MJPEG
+    // if your device is connected,but have no images
+    // please try to change it to FRAME_FORMAT_YUYV
     public static final int FRAME_FORMAT_MJPEG = UVCCamera.FRAME_FORMAT_MJPEG;
     public static final int MODE_BRIGHTNESS = UVCCamera.PU_BRIGHTNESS;
     public static final int MODE_CONTRAST = UVCCamera.PU_CONTRAST;
@@ -108,13 +109,13 @@ public class UVCCameraHelper {
                 new Thread(new Runnable() {
                     @Override
                     public void run() {
-                        // 休眠500ms，等待Camera创建完毕
+                        // wait for camera created
                         try {
                             Thread.sleep(500);
                         } catch (InterruptedException e) {
                             e.printStackTrace();
                         }
-                        // 开启预览
+                        // start previewing
                         startPreview(mCamView);
                     }
                 }).start();
@@ -172,13 +173,13 @@ public class UVCCameraHelper {
         new Thread(new Runnable() {
             @Override
             public void run() {
-                // 休眠500ms，等待Camera创建完毕
+                // wait for camera created
                 try {
                     Thread.sleep(500);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
-                // 开启预览
+                // start previewing
                 startPreview(mCamView);
             }
         }).start();
@@ -237,8 +238,10 @@ public class UVCCameraHelper {
         List<DeviceFilter> deviceFilters = DeviceFilter
                 .getDeviceFilters(mActivity.getApplicationContext(), R.xml.device_filter);
         if (mUSBMonitor == null || deviceFilters == null)
+//            throw new NullPointerException("mUSBMonitor ="+mUSBMonitor+"deviceFilters=;"+deviceFilters);
             return null;
-        return mUSBMonitor.getDeviceList(deviceFilters.get(0));
+        // matching all of filter devices
+        return mUSBMonitor.getDeviceList(deviceFilters);
     }
 
     public void capturePicture(String savePath,AbstractUVCCameraHandler.OnCaptureListener listener) {
@@ -247,19 +250,25 @@ public class UVCCameraHelper {
         }
     }
 
-    public void startRecording(RecordParams params, AbstractUVCCameraHandler.OnEncodeResultListener listener) {
-        if (mCameraHandler != null && !isRecording()) {
+    public void startPusher(AbstractUVCCameraHandler.OnEncodeResultListener listener) {
+        if (mCameraHandler != null && !isPushing()) {
+            mCameraHandler.startRecording(null, listener);
+        }
+    }
+
+    public void startPusher(RecordParams params, AbstractUVCCameraHandler.OnEncodeResultListener listener) {
+        if (mCameraHandler != null && !isPushing()) {
             mCameraHandler.startRecording(params, listener);
         }
     }
 
-    public void stopRecording() {
-        if (mCameraHandler != null && isRecording()) {
+    public void stopPusher() {
+        if (mCameraHandler != null && isPushing()) {
             mCameraHandler.stopRecording();
         }
     }
 
-    public boolean isRecording() {
+    public boolean isPushing() {
         if (mCameraHandler != null) {
             return mCameraHandler.isRecording();
         }

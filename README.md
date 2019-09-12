@@ -1,6 +1,8 @@
 AndroidUSBCamera
 ============   
-AndroidUSBCamera is developed based on the [saki4510t/UVCCamera](https://github.com/saki4510t/UVCCamera), the project of USB Camera (UVC equipment) and the use of video data acquisition are highly packaged, and it can help developers using USB Camera devices easily by a few simple APIs. By using AndroidUSBCamera,you can detect and connect to a USB Camera simply.And you also can use it to realize taking picture,recording mp4,switching resolutions ,getting h.264/aac/yuv(nv21) stream and setting  camera's contrast or brightness,supporting 480P、720P、1080P and higher,etc.
+AndroidUSBCamera is developed based on the [saki4510t/UVCCamera](https://github.com/saki4510t/UVCCamera), the project of USB Camera (UVC equipment) and the use of video data acquisition are highly packaged, and it can help developers using USB Camera devices easily by a few simple APIs. By using AndroidUSBCamera,you can detect and connect to a USB Camera simply.And you also can use it to realize taking picture,recording mp4,switching resolutions ,getting h.264/aac/yuv(nv21) stream and setting  camera's contrast or brightness,supporting 480P、720P、1080P and higher,etc.   
+
+Supporting Android 5.0,6.0,7.0,8.0,9.0
 
 [中文文档： AndroidUSBCamera，UVCCamera开发通用库](http://blog.csdn.net/andrexpert/article/details/78324181)  
 
@@ -21,7 +23,7 @@ allprojects {
 Step 2. Add the dependency  
 ```java
 dependencies {
-	        implementation 'com.github.jiangdongguo:AndroidUSBCamera:2.1.1'
+	       implementation 'com.github.jiangdongguo:AndroidUSBCamera:2.3.0'
 }
 ```
 ### 2. APIs Introduction  
@@ -34,7 +36,7 @@ mCameraHelper = UVCCameraHelper.getInstance();
  mCameraHelper.setDefaultPreviewSize(1280,720);
 // set default frame format，defalut is UVCCameraHelper.Frame_FORMAT_MPEG
 // if using mpeg can not record mp4,please try yuv
-mCameraHelper.setDefaultFrameFormat(UVCCameraHelper.FRAME_FORMAT_YUYV);	
+// mCameraHelper.setDefaultFrameFormat(UVCCameraHelper.FRAME_FORMAT_YUYV);	
 mCameraHelper.initUSBMonitor(this, mUVCCameraView, mDevConnectListener); 
 ```
    To be attention,mCallback is a object of interface CameraViewInterface.Callback,and it's used to be listenering surfaceView
@@ -113,7 +115,7 @@ RecordParams params = new RecordParams();
                     params.setRecordPath(videoPath);
                     params.setRecordDuration(0);                        // 0,do not cut save
                     params.setVoiceClose(mSwitchVoice.isChecked());    // is close voice
-                    mCameraHelper.startRecording(params, new AbstractUVCCameraHandler.OnEncodeResultListener() {
+                    mCameraHelper.startPusher(params, new AbstractUVCCameraHandler.OnEncodeResultListener() {
                         @Override
                         public void onEncodeResult(byte[] data, int offset, int length, long timestamp, int type) {
                             // type = 1,h264 video stream
@@ -131,6 +133,9 @@ RecordParams params = new RecordParams();
                             Log.i(TAG,"videoPath = "+videoPath);
                         }
                     });  
+// of course,if you only want to getting h.264 and aac stream
+// you can do like this
+mCameraHelper.startPusher(listener);
 ```
 (4) setting camera's brightness and contrast.  
 ```java
@@ -147,10 +152,26 @@ mCameraHelper.updateResolution(widht, height);
 ```
 ![Connecting gif](https://github.com/jiangdongguo/AndroidUSBCamera/blob/master/gifs/2.1.0.gif)  
 At last,remember adding permissions:  
-```
+```xml
 <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
-<uses-permission android:name="android.permission.RECORD_AUDIO" />
-``` 
+<uses-permission android:name="android.permission.RECORD_AUDIO" />  
+```     
+
+
+### 3. Solving Problems
+
+1. connected,but preview failed
+
+Please checking your preview format and change YUV to MJPEG or MJPEG to YUV,because some usb devices only supporting YUV   
+
+2. never found the device   
+
+- confirm your phone support otg   
+
+- get a file from your sd card named failed-device.txt in the path of root sd card/UsbCamera/failed-device.txt and tell me
+
+
+
 Other Library about Android Camera
 -------
 [OkCamera](https://github.com/jiangdongguo/OkCamera) Android Camera univsersally operation.  

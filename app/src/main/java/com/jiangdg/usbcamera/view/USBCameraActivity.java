@@ -26,6 +26,7 @@ import android.widget.Toast;
 
 import com.jiangdg.usbcamera.R;
 import com.jiangdg.usbcamera.UVCCameraHelper;
+import com.jiangdg.usbcamera.application.MyApplication;
 import com.jiangdg.usbcamera.utils.FileUtils;
 import com.serenegiant.usb.CameraDialog;
 import com.serenegiant.usb.Size;
@@ -34,6 +35,7 @@ import com.serenegiant.usb.common.AbstractUVCCameraHandler;
 import com.serenegiant.usb.encoder.RecordParams;
 import com.serenegiant.usb.widget.CameraViewInterface;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -70,10 +72,6 @@ public class USBCameraActivity extends AppCompatActivity implements CameraDialog
 
         @Override
         public void onAttachDev(UsbDevice device) {
-            if (mCameraHelper == null || mCameraHelper.getUsbDeviceCount() == 0) {
-                showShortMsg("check no usb camera");
-                return;
-            }
             // request open permission
             if (!isRequest) {
                 isRequest = true;
@@ -139,14 +137,14 @@ public class USBCameraActivity extends AppCompatActivity implements CameraDialog
         mUVCCameraView = (CameraViewInterface) mTextureView;
         mUVCCameraView.setCallback(this);
         mCameraHelper = UVCCameraHelper.getInstance();
-        mCameraHelper.setDefaultFrameFormat(UVCCameraHelper.FRAME_FORMAT_YUYV);
+        mCameraHelper.setDefaultFrameFormat(UVCCameraHelper.FRAME_FORMAT_MJPEG);
         mCameraHelper.initUSBMonitor(this, mUVCCameraView, listener);
 
 
         mCameraHelper.setOnPreviewFrameListener(new AbstractUVCCameraHandler.OnPreViewResultListener() {
             @Override
             public void onPreviewResult(byte[] nv21Yuv) {
-
+                Log.d(TAG, "onPreviewResult: "+nv21Yuv.length);
             }
         });
     }
@@ -226,7 +224,7 @@ public class USBCameraActivity extends AppCompatActivity implements CameraDialog
                     showShortMsg("sorry,camera open failed");
                     return super.onOptionsItemSelected(item);
                 }
-                String picPath = UVCCameraHelper.ROOT_PATH + System.currentTimeMillis()
+                String picPath = UVCCameraHelper.ROOT_PATH + MyApplication.DIRECTORY_NAME +"/images/"+ System.currentTimeMillis()
                         + UVCCameraHelper.SUFFIX_JPEG;
                 mCameraHelper.capturePicture(picPath, new AbstractUVCCameraHandler.OnCaptureListener() {
                     @Override
@@ -241,14 +239,15 @@ public class USBCameraActivity extends AppCompatActivity implements CameraDialog
                     showShortMsg("sorry,camera open failed");
                     return super.onOptionsItemSelected(item);
                 }
-                if (!mCameraHelper.isRecording()) {
-                    String videoPath = UVCCameraHelper.ROOT_PATH + System.currentTimeMillis();
+                if (!mCameraHelper.isPushing()) {
+                    String videoPath = UVCCameraHelper.ROOT_PATH + MyApplication.DIRECTORY_NAME +"/videos/"+ System.currentTimeMillis();
                     FileUtils.createfile(FileUtils.ROOT_PATH + "test666.h264");
+                    // if you want to record,please create RecordParams like this
                     RecordParams params = new RecordParams();
                     params.setRecordPath(videoPath);
                     params.setRecordDuration(0);                        // 设置为0，不分割保存
                     params.setVoiceClose(mSwitchVoice.isChecked());    // is close voice
-                    mCameraHelper.startRecording(params, new AbstractUVCCameraHandler.OnEncodeResultListener() {
+                    mCameraHelper.startPusher(params, new AbstractUVCCameraHandler.OnEncodeResultListener() {
                         @Override
                         public void onEncodeResult(byte[] data, int offset, int length, long timestamp, int type) {
                             // type = 1,h264 video stream
@@ -266,11 +265,13 @@ public class USBCameraActivity extends AppCompatActivity implements CameraDialog
                             Log.i(TAG,"videoPath = "+videoPath);
                         }
                     });
+                    // if you only want to push stream,please call like this
+                    // mCameraHelper.startPusher(listener);
                     showShortMsg("start record...");
                     mSwitchVoice.setEnabled(false);
                 } else {
                     FileUtils.releaseFile();
-                    mCameraHelper.stopRecording();
+                    mCameraHelper.stopPusher();
                     showShortMsg("stop record...");
                     mSwitchVoice.setEnabled(true);
                 }
